@@ -89,7 +89,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Handle, Position, useVueFlow } from '@vue-flow/core'
+import { Handle, Position } from '@vue-flow/core'
 import { usePipeline } from '@/composables/usePipeline'
 import type { SqlFilterParams } from '@/types/pipeline'
 

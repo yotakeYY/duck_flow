@@ -39,7 +39,7 @@
         @node-click="onNodeClick"
         @connect="onConnect"
         @node-context-menu="onNodeContextMenu"
-        @edge-context-menu="onEdgeContextMenu"
+        @edge-context-menu="(onEdgeContextMenu as any)"
         @pane-click="onPaneClick"
       >
         <!-- 背景网格 -->
@@ -117,7 +117,6 @@ import {
   useVueFlow,
   type Connection,
   type NodeMouseEvent,
-  type EdgeMouseEvent,
 } from '@vue-flow/core'
 import { Background, BackgroundVariant } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
@@ -258,23 +257,26 @@ function onPaneClick() {
  */
 function onNodeContextMenu({ event, node }: NodeMouseEvent) {
   event.preventDefault()
-  // 限制菜单不超出视口边界
   const menuW = 160
   const menuH = 90
-  const x = Math.min(event.clientX, window.innerWidth - menuW - 8)
-  const y = Math.min(event.clientY, window.innerHeight - menuH - 8)
+  const clientX = (event as unknown as MouseEvent).clientX
+  const clientY = (event as unknown as MouseEvent).clientY
+  const x = Math.min(clientX, window.innerWidth - menuW - 8)
+  const y = Math.min(clientY, window.innerHeight - menuH - 8)
   contextMenu.value = { visible: true, x, y, type: 'node', id: node.id }
 }
 
 /**
  * 功能2：边（连接线）右键菜单
+ * EdgeMouseEvent 的 event 是 MouseTouchEvent（MouseEvent | TouchEvent 的联合），需要类型断言
  */
-function onEdgeContextMenu({ event, edge }: EdgeMouseEvent) {
+function onEdgeContextMenu({ event, edge }: { event: MouseEvent | TouchEvent; edge: { id: string } }) {
   event.preventDefault()
   const menuW = 160
   const menuH = 90
-  const x = Math.min(event.clientX, window.innerWidth - menuW - 8)
-  const y = Math.min(event.clientY, window.innerHeight - menuH - 8)
+  const me = event as MouseEvent
+  const x = Math.min(me.clientX, window.innerWidth - menuW - 8)
+  const y = Math.min(me.clientY, window.innerHeight - menuH - 8)
   contextMenu.value = { visible: true, x, y, type: 'edge', id: edge.id }
 }
 
