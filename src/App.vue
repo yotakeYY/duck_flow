@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container" @click="closeContextMenu" @contextmenu.prevent>
     <!-- 侧边栏：节点库 -->
     <NodeSidebar />
 
@@ -38,6 +38,9 @@
         @dragover="onDragOver"
         @node-click="onNodeClick"
         @connect="onConnect"
+        @node-context-menu="onNodeContextMenu"
+        @edge-context-menu="onEdgeContextMenu"
+        @pane-click="onPaneClick"
       >
         <!-- 背景网格 -->
         <Background :variant="BackgroundVariant.Dots" :gap="24" :size="1.5" :color="'#2a2d3e'" />
@@ -81,16 +84,40 @@
         </div>
       </div>
     </Transition>
+
+    <!-- 右键上下文菜单 -->
+    <Transition name="ctx-menu">
+      <div
+        v-if="contextMenu.visible"
+        class="context-menu"
+        :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
+        @click.stop
+      >
+        <!-- 菜单标题 -->
+        <div class="ctx-menu-header">
+          <span class="ctx-menu-icon">{{ contextMenu.type === 'node' ? '📦' : '🔗' }}</span>
+          <span class="ctx-menu-title">
+            {{ contextMenu.type === 'node' ? '节点操作' : '连接操作' }}
+          </span>
+        </div>
+        <!-- 删除按钮 -->
+        <button class="ctx-menu-item ctx-menu-danger" @click="deleteTarget">
+          <span class="ctx-item-icon">🗑</span>
+          <span>删除{{ contextMenu.type === 'node' ? '节点' : '连接' }}</span>
+        </button>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, markRaw, onMounted } from 'vue'
+import { ref, computed, markRaw, onMounted, watch } from 'vue'
 import {
   VueFlow,
   useVueFlow,
   type Connection,
   type NodeMouseEvent,
+  type EdgeMouseEvent,
 } from '@vue-flow/core'
 import { Background, BackgroundVariant } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
@@ -110,7 +137,7 @@ import type { NodeType, PipelineNode } from '@/types/pipeline'
 
 // ---- DuckDB 初始化 ----
 const { status: duckDbStatus, initializeDuckDb } = useDuckDb()
-const { nodes, edges, selectedNodeId, executingNodes, addNode, executeNode } = usePipeline()
+const { nodes, edges, selectedNodeId, executingNodes, addNode, executeNode, removeNode } = usePipeline()
 
 // ---- 注册自定义节点类型（用 markRaw 阻止响应式转换）----
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -134,6 +161,31 @@ const { addEdges, project } = useVueFlow()
 
 const previewVisible = ref(false)
 const isExecutingAny = computed(() => executingNodes.value.size > 0)
+
+// ---- 右键上下文菜单状态 ----
+const contextMenu = ref<{
+  visible: boolean
+  x: number
+  y: number
+  type: 'node' | 'edge'
+  id: string
+}>({
+  visible: false,
+  x: 0,
+  y: 0,
+  type: 'node',
+  id: '',
+})
+
+/**
+ * 功能1：选中节点时自动展开预览面板
+ * 当 selectedNodeId 变为有效值时自动显示预览
+ */
+watch(selectedNodeId, (newId) => {
+  if (newId) {
+    previewVisible.value = true
+  }
+})
 
 // ---- 各节点类型的默认数据 ----
 function getDefaultNodeData(type: NodeType) {
@@ -160,6 +212,7 @@ function onDrop(event: DragEvent) {
   if (!nodeType) return
 
   event.preventDefault()
+  closeContextMenu()
 
   // 将拖放位置转换为流坐标
   const position = project({ x: event.clientX - 250, y: event.clientY - 40 })
@@ -185,12 +238,72 @@ function onDragOver(event: DragEvent) {
 }
 
 /**
- * 点击节点时选中并显示预览
+ * 点击节点时选中（预览面板由 watch 自动展开）
  */
 function onNodeClick({ node }: NodeMouseEvent) {
+  closeContextMenu()
   selectedNodeId.value = node.id
-  previewVisible.value = true
   executeNode(node.id)
+}
+
+/**
+ * 点击空白区域时关闭上下文菜单
+ */
+function onPaneClick() {
+  closeContextMenu()
+}
+
+/**
+ * 功能2：节点右键菜单
+ */
+function onNodeContextMenu({ event, node }: NodeMouseEvent) {
+  event.preventDefault()
+  // 限制菜单不超出视口边界
+  const menuW = 160
+  const menuH = 90
+  const x = Math.min(event.clientX, window.innerWidth - menuW - 8)
+  const y = Math.min(event.clientY, window.innerHeight - menuH - 8)
+  contextMenu.value = { visible: true, x, y, type: 'node', id: node.id }
+}
+
+/**
+ * 功能2：边（连接线）右键菜单
+ */
+function onEdgeContextMenu({ event, edge }: EdgeMouseEvent) {
+  event.preventDefault()
+  const menuW = 160
+  const menuH = 90
+  const x = Math.min(event.clientX, window.innerWidth - menuW - 8)
+  const y = Math.min(event.clientY, window.innerHeight - menuH - 8)
+  contextMenu.value = { visible: true, x, y, type: 'edge', id: edge.id }
+}
+
+/**
+ * 执行右键菜单中的删除操作
+ */
+function deleteTarget() {
+  if (!contextMenu.value.id) return
+
+  if (contextMenu.value.type === 'node') {
+    // 删除节点（removeNode 会同时清理相关的边）
+    removeNode(contextMenu.value.id)
+    if (selectedNodeId.value === contextMenu.value.id) {
+      selectedNodeId.value = null
+      previewVisible.value = false
+    }
+  } else {
+    // 删除边（连接线）
+    edges.value = edges.value.filter((e) => e.id !== contextMenu.value.id)
+  }
+
+  closeContextMenu()
+}
+
+/**
+ * 关闭上下文菜单
+ */
+function closeContextMenu() {
+  contextMenu.value.visible = false
 }
 
 /**
@@ -224,6 +337,7 @@ function clearCanvas() {
   edges.value = []
   selectedNodeId.value = null
   previewVisible.value = false
+  closeContextMenu()
 }
 
 /**

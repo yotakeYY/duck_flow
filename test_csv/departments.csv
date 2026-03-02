@@ -1,0 +1,6 @@
+dept_id,dept_name,budget,manager
+D01,Engineering,500000,Frank Wu
+D02,Marketing,300000,Grace Zhao
+D03,Sales,400000,Henry Xu
+D04,HR,200000,Iris Hu
+D05,Finance,350000,Jack Sun
