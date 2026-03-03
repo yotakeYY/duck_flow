@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" @click="closeContextMenu" @contextmenu.prevent>
+  <div class="app-container">
     <!-- 侧边栏：节点库 -->
     <NodeSidebar />
 
@@ -86,6 +86,13 @@
     </Transition>
 
     <!-- 右键上下文菜单 -->
+    <!-- 透明遮罩：点击菜单外任意位置时关闭菜单 -->
+    <div
+      v-if="contextMenu.visible"
+      class="ctx-overlay"
+      @click="closeContextMenu"
+      @contextmenu.prevent="closeContextMenu"
+    />
     <Transition name="ctx-menu">
       <div
         v-if="contextMenu.visible"
