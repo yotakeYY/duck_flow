@@ -216,6 +216,29 @@ async function executeNode(nodeId: string): Promise<QueryResult | null> {
     }
 }
 
+/**
+ * 从指定节点开始级联执行：先执行自身，再依次执行所有直接下游节点
+ * CSV 上传完成后调用此函数，可自动展示完整的管道结果
+ * @param nodeId - 起始节点 ID
+ */
+async function executeForward(nodeId: string): Promise<void> {
+    const result = await executeNode(nodeId)
+
+    if (result !== null) {
+        // 记录最近执行成功的节点，用于预览面板自动显示
+        lastExecutedNodeId.value = nodeId
+
+        // 找到所有直接下游节点（源是当前节点的边的目标节点）
+        const downstreamEdges = edges.value.filter((e: Edge) => e.source === nodeId)
+        for (const edge of downstreamEdges) {
+            await executeForward(edge.target)
+        }
+    }
+}
+
+// 最近执行完成的节点 ID（用于自动切换预览内容）
+const lastExecutedNodeId: Ref<string | null> = ref(null)
+
 // 选中节点变更时自动执行
 watch(selectedNodeId, async (newId) => {
     if (newId) {
@@ -265,6 +288,7 @@ export function usePipeline() {
         nodes,
         edges,
         selectedNodeId,
+        lastExecutedNodeId,
         queryResults,
         executingNodes,
         selectedNodeResult,
@@ -274,6 +298,7 @@ export function usePipeline() {
         updateNode,
         removeNode,
         executeNode,
+        executeForward,
         buildCteSql,
         getUpstreamColumns,
         getInputNodeByHandle,

@@ -76,7 +76,7 @@ const statusLabels: Record<string, string> = {
   error: '错误',
 }
 
-// 节点库定义
+// 节点库定义（移除了输出视图节点，结果现在自动展示）
 const nodeLibrary: Array<{
   type: NodeType
   icon: string
@@ -100,12 +100,6 @@ const nodeLibrary: Array<{
     icon: '🔗',
     title: 'SQL 连接',
     description: '连接两张数据表',
-  },
-  {
-    type: 'output_view',
-    icon: '📊',
-    title: '输出视图',
-    description: '可视化预览结果',
   },
 ]
 

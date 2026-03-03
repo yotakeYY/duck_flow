@@ -144,7 +144,7 @@ import PreviewPanel from '@/components/PreviewPanel.vue'
 import CsvSourceNode from '@/components/nodes/CsvSourceNode.vue'
 import SqlFilterNode from '@/components/nodes/SqlFilterNode.vue'
 import SqlJoinNode from '@/components/nodes/SqlJoinNode.vue'
-import OutputViewNode from '@/components/nodes/OutputViewNode.vue'
+
 
 import { useDuckDb } from '@/composables/useDuckDb'
 import { usePipeline } from '@/composables/usePipeline'
@@ -152,15 +152,18 @@ import type { NodeType, PipelineNode } from '@/types/pipeline'
 
 // ---- DuckDB 初始化 ----
 const { status: duckDbStatus, initializeDuckDb } = useDuckDb()
-const { nodes, edges, selectedNodeId, executingNodes, addNode, executeNode, removeNode } = usePipeline()
+const {
+  nodes, edges, selectedNodeId, lastExecutedNodeId,
+  executingNodes, addNode, executeNode, removeNode
+} = usePipeline()
 
 // ---- 注册自定义节点类型（用 markRaw 阻止响应式转换）----
+// output_view は削除されたが、後方互換性のために登録を維持する
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const nodeTypes: Record<string, any> = {
   csv_source: markRaw(CsvSourceNode),
   sql_filter: markRaw(SqlFilterNode),
   sql_join: markRaw(SqlJoinNode),
-  output_view: markRaw(OutputViewNode),
 }
 
 // ---- 边的默认配置 ----
@@ -194,7 +197,6 @@ const contextMenu = ref<{
 
 /**
  * 功能1：选中节点时自动展开预览面板
- * 当 selectedNodeId 变为有效值时自动显示预览
  */
 watch(selectedNodeId, (newId) => {
   if (newId) {
@@ -202,9 +204,20 @@ watch(selectedNodeId, (newId) => {
   }
 })
 
+/**
+ * 功能2：任意节点执行完成后，自动切换预览到最新结果
+ * CSV 上传后级联执行时，lastExecutedNodeId 会追踪到最末端的节点
+ */
+watch(lastExecutedNodeId, (newId) => {
+  if (newId) {
+    selectedNodeId.value = newId
+    previewVisible.value = true
+  }
+})
+
 // ---- 各节点类型的默认数据 ----
 function getDefaultNodeData(type: NodeType) {
-  const defaults: Record<NodeType, Partial<PipelineNode['data']>> = {
+  const defaults: Partial<Record<NodeType, Partial<PipelineNode['data']>>> = {
     csv_source: { label: 'CSV 源', params: { fileName: '', columns: [], rowCount: 0 } },
     sql_filter: {
       label: '过滤',
@@ -214,9 +227,8 @@ function getDefaultNodeData(type: NodeType) {
       label: '连接',
       params: { joinType: 'INNER', leftColumn: '', rightColumn: '' },
     },
-    output_view: { label: '输出', params: {} },
   }
-  return defaults[type]
+  return defaults[type] ?? { label: type, params: {} }
 }
 
 /**
