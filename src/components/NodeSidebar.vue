@@ -1,10 +1,16 @@
 <template>
   <!-- 节点库侧边栏：通过拖拽将节点添加到画布 -->
   <aside class="node-sidebar">
-    <!-- Logo -->
+    <!-- Logo + 帮助按钮 -->
     <div class="sidebar-logo">
       <span class="logo-icon">🦆</span>
       <span class="logo-text">DuckFlow</span>
+      <!-- 使用说明按钮 -->
+      <button
+        class="help-btn"
+        title="使用说明"
+        @click="showHelp = true"
+      >?</button>
     </div>
 
     <!-- 分割线 -->
@@ -60,13 +66,21 @@
       <span class="footer-version">v0.1.0</span>
     </div>
   </aside>
+
+  <!-- 使用说明弹窗 -->
+  <HelpModal v-model="showHelp" />
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useDuckDb } from '@/composables/useDuckDb'
 import type { NodeType } from '@/types/pipeline'
+import HelpModal from '@/components/HelpModal.vue'
 
 const { status: duckDbStatus, registeredTables } = useDuckDb()
+
+// 使用说明弹窗显示状态
+const showHelp = ref(false)
 
 // 状态显示标签
 const statusLabels: Record<string, string> = {
