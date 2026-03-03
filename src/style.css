@@ -803,29 +803,81 @@ body {
   text-align: right;
 }
 
-/* ---- Join フォーム ---- */
-.join-form {
-  display: flex;
-  flex-direction: column;
+/* ---- JOIN 节点：整体布局 ---- */
+.join-node .node-body {
   gap: 6px;
 }
 
-.join-cols {
+/* 每侧（左表/右表）的容器 */
+.join-side {
   display: flex;
-  align-items: center;
-  gap: 4px;
+  flex-direction: column;
+  gap: 3px;
 }
 
-.join-eq {
-  color: var(--color-accent-amber);
-  font-weight: 700;
-  font-size: 13px;
+/* 表名标签行（含彩色圆点 + 表名） */
+.join-table-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 0;
+}
+
+/* 端口标识圆点 */
+.join-handle-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
   flex-shrink: 0;
 }
 
-.join-cols .node-input {
-  flex: 1;
-  min-width: 0;
+.left-dot {
+  background: var(--color-accent-purple);
+  box-shadow: 0 0 4px rgba(99, 102, 241, 0.6);
+}
+
+.right-dot {
+  background: var(--color-accent-amber);
+  box-shadow: 0 0 4px rgba(245, 158, 11, 0.6);
+}
+
+/* 表名文本 */
+.join-table-name {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+}
+
+/* 连接符号行（JOIN 类型标签 + = 符号） */
+.join-eq-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+/* JOIN 类型徽章 */
+.join-type-badge {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-accent-amber);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  letter-spacing: 0.04em;
+}
+
+.join-eq-symbol {
+  color: var(--color-accent-amber);
+  font-weight: 700;
+  font-size: 14px;
 }
 
 /* ---- Output ノード ---- */

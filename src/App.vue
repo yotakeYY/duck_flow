@@ -100,6 +100,15 @@
             {{ contextMenu.type === 'node' ? '节点操作' : '连接操作' }}
           </span>
         </div>
+        <!-- 复制节点（仅节点显示）-->
+        <button
+          v-if="contextMenu.type === 'node'"
+          class="ctx-menu-item"
+          @click="copyNode"
+        >
+          <span class="ctx-item-icon">📋</span>
+          <span>复制节点</span>
+        </button>
         <!-- 删除按钮 -->
         <button class="ctx-menu-item ctx-menu-danger" @click="deleteTarget">
           <span class="ctx-item-icon">🗑</span>
@@ -278,6 +287,30 @@ function onEdgeContextMenu({ event, edge }: { event: MouseEvent | TouchEvent; ed
   const x = Math.min(me.clientX, window.innerWidth - menuW - 8)
   const y = Math.min(me.clientY, window.innerHeight - menuH - 8)
   contextMenu.value = { visible: true, x, y, type: 'edge', id: edge.id }
+}
+
+/**
+ * 复制节点：深度克隆节点数据，生成新 ID，并偏移位置
+ */
+function copyNode() {
+  if (!contextMenu.value.id || contextMenu.value.type !== 'node') return
+
+  const sourceNode = nodes.value.find((n) => n.id === contextMenu.value.id)
+  if (!sourceNode) return
+
+  const newNode: PipelineNode = {
+    id: uuidv4(),
+    type: sourceNode.type,
+    position: {
+      x: sourceNode.position.x + 30,
+      y: sourceNode.position.y + 30,
+    },
+    // 深度克隆节点数据，避免共享引用
+    data: JSON.parse(JSON.stringify(sourceNode.data)),
+  }
+
+  addNode(newNode)
+  closeContextMenu()
 }
 
 /**

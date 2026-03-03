@@ -56,6 +56,21 @@ function getUpstreamColumns(nodeId: string): string[] {
 }
 
 /**
+ * 获取连接到指定节点指定端口的上游节点
+ * 主要用于 SQL Join 节点识别左右两侧分别连接的数据源
+ * @param nodeId - 目标节点 ID
+ * @param handleId - 端口 ID（如 'left' 或 'right'）
+ * @returns 上游节点，未连接则返回 null
+ */
+function getInputNodeByHandle(nodeId: string, handleId: string): PipelineNode | null {
+    const edge = edges.value.find(
+        (e: Edge) => e.target === nodeId && e.targetHandle === handleId
+    )
+    if (!edge) return null
+    return nodes.value.find((n: PipelineNode) => n.id === edge.source) ?? null
+}
+
+/**
  * 对节点图进行拓扑排序遍历
  * 用于按依赖顺序执行节点
  */
@@ -261,5 +276,6 @@ export function usePipeline() {
         executeNode,
         buildCteSql,
         getUpstreamColumns,
+        getInputNodeByHandle,
     }
 }
